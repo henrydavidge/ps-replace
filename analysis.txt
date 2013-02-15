@@ -1,0 +1,11 @@
+MRU
+PostgreSQL executes this query using the Nested Loop Join algorithm (confirmed using the Query Plan command). For every tuple from the R relation, the system scans the complete S relation to find all S tuples that match this R tuple. Then the next R tuple is read, and so on... The R relation is scanned only once.
+Thus, once the memory buffers are full, the most recently used page in memory is swapped out for a new page from disk. This leads to higher performance since the original buffers are already in memory for the next iteration thorough S.
+
+Unexpected low performance of MRU
+PostgreSQL uses a few buffers to initialize the query (e.g. load system tables), and then unpins these buffers before the query processing begins. In the MRU scheme, these buffers are left unutilized for the rest of the query. This leads to suboptimal cache hit rates, especially for smaller page numbers since a large portion of the pages is left unutilized.
+
+CLOCK
+The clock algorithm keeps a circular list of pages in memory, with a pointer pointing to the last examined page frame in the list. When a page fault occurs and no empty frames exist, then the “pinned” bit is inspected at the pointer's location. If ‘pinned’ is 0, the new page is put in place of the page the pointer points to, otherwise the ‘pinned’ bit is cleared. Then, the clock pointer is incremented and the process is repeated until a page is replaced.
+
+The cache hit rates for Clock is expected since increasing the number of pages increases the absolute amount of memory available to store tuples, leading to a higher cache hit rate.
